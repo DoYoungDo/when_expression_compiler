@@ -1,0 +1,16 @@
+{
+  "name": "when_expression_compiler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "out/index.js",
+  "scripts": {
+    "watch": "tsc -b -w",
+    "build": "tsc -b",
+    "test": "npm run build && node out/test.js"
+  },
+  "author": "doyoung",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.0.15"
+  }
+}
