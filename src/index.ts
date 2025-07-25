@@ -1,7 +1,13 @@
 enum SyntaxKind {
     IDENTIFIER = "IDENTIFIER",
+
     NUMBER = "NUMBER",
     STRING = "STRING",
+    REG_EXPRESSTION = "REG_EXPRESSTION",
+
+    BRACKET_LEFT = "BRACKET_LEFT",
+    BRACKET_RIGHT = "BRACKET_RIGHT",
+
     OPERATOR_NOT = "OPERATOR_NOT",
     OPERATOR_AND = "OPERATOR_AND",
     OPERATOR_OR = "OPERATOR_OR",
@@ -10,16 +16,12 @@ enum SyntaxKind {
     OPERATOR_GREATER_THAN = "OPERATOR_GREATER_THAN",
     OPERATOR_LESS_THEN = "OPERATOR_LESS_THEN",
     OPERATOR_MATCHES = "OPERATOR_MATCHES",
-    BRACKET_LEFT = "BRACKET_LEFT",
-    BRACKET_RIGHT = "BRACKET_RIGHT",
-    REG_EXPRESSTION = "REG_EXPRESSTION",
     KEY_WORD_IN = "KEY_WORD_IN",
     KEY_WORD_NOT = "KEY_WORD_NOT",
-    END = "END"
 }
 interface Token {
     readonly kind: SyntaxKind
-    value?: string
+    text: string
     [v: string]: any
 }
 
@@ -32,23 +34,20 @@ class PositionError extends Error{
     }
 }
 
-// enum SemanticKind{
-//     STATEMENT,
-//     EXPRESSION
-// }
+class TokenError extends Error{
+    constructor(public token:Token, message: string) {
+        let text = [message];
+        text.push(`    ${token.text}    `);
+        text.push(" ".repeat(4) + "^");
+        
+        super(text.join("\n"));
+    }
+}
 
-// interface Node{
-//     kind: SemanticKind
-// }
-
-// interface Statement extends Node{
-//     kind: SemanticKind.STATEMENT
-//     expression: Expression
-// }
-
-// interface Expression extends Node{
-//     kind: SemanticKind.EXPRESSION
-// }
+export interface Context{
+    evlExp(expression:String):any
+    evlOp(operator:String, left:any, right:any):any
+}
 
 export function tokenizer(input: string): Token[] {
     let current = 0;
@@ -66,7 +65,7 @@ export function tokenizer(input: string): Token[] {
         else if (char === "(") {
             tokens.push({
                 kind: SyntaxKind.BRACKET_LEFT,
-                value: char
+                text: char
             });
             current++;
             continue;
@@ -74,7 +73,7 @@ export function tokenizer(input: string): Token[] {
         else if (char === ")") {
             tokens.push({
                 kind: SyntaxKind.BRACKET_RIGHT,
-                value: char
+                text: char
             })
             current++;
             continue;
@@ -88,6 +87,7 @@ export function tokenizer(input: string): Token[] {
                 }
                 tokens.push({
                     kind: SyntaxKind.OPERATOR_INQUALITY,
+                    text: char
                 })
                 ++current;
                 continue;
@@ -95,6 +95,7 @@ export function tokenizer(input: string): Token[] {
             else{
                 tokens.push({
                     kind: SyntaxKind.OPERATOR_NOT,
+                    text: char
                 })
                 continue;
             }
@@ -105,6 +106,7 @@ export function tokenizer(input: string): Token[] {
             if (nextChar === "|") {
                 tokens.push({
                     kind: SyntaxKind.OPERATOR_OR,
+                    text: "||"
                 })
                 ++current;
                 continue;
@@ -118,6 +120,7 @@ export function tokenizer(input: string): Token[] {
             if (nextChar === "&") {
                 tokens.push({
                     kind: SyntaxKind.OPERATOR_AND,
+                    text: "&&"
                 })
                 ++current;
                 continue;
@@ -129,13 +132,16 @@ export function tokenizer(input: string): Token[] {
         else if (char === "=") {
             let nextChar = input[++current];
             if (nextChar === "=") {
+                let text = "===";
                 let nextNextChar = input[++current];
                 if(nextNextChar !== "="){
                     --current;
+                    text = "=="
                 }
 
                 tokens.push({
                     kind: SyntaxKind.OPERATOR_EQUALITY,
+                    text
                 })
                 ++current;
                 continue;
@@ -143,6 +149,7 @@ export function tokenizer(input: string): Token[] {
             else if(nextChar === "~"){
                 tokens.push({
                     kind: SyntaxKind.OPERATOR_MATCHES,
+                    text: "=~"
                 })
                 ++current;
                 continue;
@@ -161,7 +168,7 @@ export function tokenizer(input: string): Token[] {
 
             tokens.push({
                 kind: SyntaxKind.OPERATOR_LESS_THEN,
-                value:`${char}${nextChar}`,
+                text:`${char}${nextChar}`,
                 include
             })
             continue;
@@ -176,7 +183,7 @@ export function tokenizer(input: string): Token[] {
 
             tokens.push({
                 kind: SyntaxKind.OPERATOR_GREATER_THAN,
-                value:`${char}${nextChar}`,
+                text:`${char}${nextChar}`,
                 include
             })
             continue;
@@ -195,7 +202,7 @@ export function tokenizer(input: string): Token[] {
 
             tokens.push({
                 kind: SyntaxKind.STRING,
-                value
+                text: value
             })
             ++current;
             continue;
@@ -214,7 +221,7 @@ export function tokenizer(input: string): Token[] {
 
             tokens.push({
                 kind: SyntaxKind.REG_EXPRESSTION,
-                value
+                text: value
             })
             ++current;
             continue;
@@ -234,7 +241,7 @@ export function tokenizer(input: string): Token[] {
 
             tokens.push({
                 kind: SyntaxKind.NUMBER,
-                value
+                text: value
             });
             continue;
         }
@@ -246,6 +253,7 @@ export function tokenizer(input: string): Token[] {
                     if (regSpace.test(nextNextChar)) {
                         tokens.push({
                             kind: SyntaxKind.KEY_WORD_IN,
+                            text: "in"
                         })
 
                         ++current;
@@ -260,6 +268,7 @@ export function tokenizer(input: string): Token[] {
                     if (nextNextChar === "t") {
                         tokens.push({
                             kind: SyntaxKind.KEY_WORD_NOT,
+                            text: "not"
                         })
 
                         ++current;
@@ -278,7 +287,7 @@ export function tokenizer(input: string): Token[] {
 
             tokens.push({
                 kind: SyntaxKind.IDENTIFIER,
-                value
+                text: value
             })
             continue;
         }
@@ -287,16 +296,68 @@ export function tokenizer(input: string): Token[] {
         }
     }
 
-    tokens.push({
-        kind: SyntaxKind.END,
-    })
-
     return tokens;
 }
 
-// export function parser(tokens: Token[]): Statement {
-//     let statement:Statement = {
-//         kind: SemanticKind.STATEMENT,
-//     }
-//     return statement;
-// }
+export function evl(tokens: Token[], context: Context): boolean {
+    let current = 0;
+    let opStack:string[] = [];
+    let valueStack: any[] = [];
+    while (current < tokens.length) {
+        let token = tokens[current];
+        if(token.kind === SyntaxKind.IDENTIFIER){
+            let nextToken = tokens[++current];
+            if(!isOp(nextToken)){
+                throw new TokenError(nextToken, "expected operator")
+            }
+
+            valueStack.push(context.evlExp(token.text));
+            continue;
+        }
+        else if(isOp(token)){
+            if(valueStack.length < 1){
+                throw new TokenError(token, "unexpected operator")
+            }
+
+            let tokenText = token.text;
+            let nextToken = tokens[++current];
+            do {
+                if (isOp(nextToken)) {
+                    if (token.kind === SyntaxKind.KEY_WORD_NOT && nextToken.kind === SyntaxKind.KEY_WORD_IN) {
+                        tokenText = "not in";
+                        nextToken = tokens[++current];
+                        break;
+                    }
+                    throw new TokenError(nextToken, "unexpected operator")
+                }
+            } while (0);
+
+            if(nextToken.kind === SyntaxKind.STRING || nextToken.kind === SyntaxKind.NUMBER || nextToken.kind === SyntaxKind.REG_EXPRESSTION){
+                valueStack.push(context.evlOp(tokenText, valueStack.pop(), nextToken.text))
+                ++current;
+                continue;
+            }
+            else if(nextToken.kind === SyntaxKind.IDENTIFIER){
+                valueStack.push(context.evlOp(tokenText, valueStack.pop(), context.evlExp(nextToken.text)))
+                ++current;
+                continue;
+            }
+
+        }
+    }
+
+    function isOp(token:Token){
+        return token.kind === SyntaxKind.OPERATOR_NOT ||
+            token.kind === SyntaxKind.OPERATOR_AND ||
+            token.kind === SyntaxKind.OPERATOR_OR ||
+            token.kind === SyntaxKind.OPERATOR_EQUALITY ||
+            token.kind === SyntaxKind.OPERATOR_INQUALITY ||
+            token.kind === SyntaxKind.OPERATOR_GREATER_THAN ||
+            token.kind === SyntaxKind.OPERATOR_LESS_THEN ||
+            token.kind === SyntaxKind.OPERATOR_MATCHES ||
+            token.kind === SyntaxKind.KEY_WORD_IN ||
+            token.kind === SyntaxKind.KEY_WORD_NOT;
+    }
+
+    return valueStack.length > 0 ? valueStack[0] : false;
+}
