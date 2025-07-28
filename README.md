@@ -21,7 +21,7 @@
    npm install
    ```
 
-2. 运行测试：
+2. 构建：
    ```bash
    npm run build
    ```
