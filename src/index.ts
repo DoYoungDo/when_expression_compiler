@@ -16,8 +16,8 @@ enum SyntaxKind {
     OPERATOR_GREATER_THAN = "OPERATOR_GREATER_THAN",
     OPERATOR_LESS_THEN = "OPERATOR_LESS_THEN",
     OPERATOR_MATCHES = "OPERATOR_MATCHES",
-    KEY_WORD_IN = "KEY_WORD_IN",
-    KEY_WORD_NOT = "KEY_WORD_NOT",
+    OPERATOR_IN = "KEY_WORD_IN",
+    OPERATOR_NOT_IN = "OPERATOR_NOT_IN",
 }
 export interface Token {
     readonly kind: SyntaxKind
@@ -44,9 +44,22 @@ class TokenError extends Error{
     }
 }
 
-export interface Context{
-    evlExp(expression:String):any
-    evlOp(operator:String, left:any, right:any):any
+export abstract class Context{
+    abstract evlExp(expression:string):any
+    evlOp(operator: string, left: any, right: any): any {
+        switch (operator) {
+            case "==": return left === right;
+            case "!=": return left !== right;
+            case ">": return left > right;
+            case "<": return left < right;
+            case "in": return Array.isArray(right) && right.includes(left);
+            case "not in": return Array.isArray(right) && !right.includes(left);
+            case "=~": return new RegExp(right).test(left);
+            case "&&": return left && right;
+            case "||": return left || right;
+            default: throw new Error(`Unknown operator: ${operator}`);
+        }
+    }
 }
 
 export function tokenizer(input: string): Token[] {
@@ -54,7 +67,7 @@ export function tokenizer(input: string): Token[] {
     let tokens: Token[] = [];
     let regSpace = /\s/;
     let regNum = /\d/;
-    let regLetter = /[a-zA-Z]/;
+    let regLetter = /[a-zA-Z_]/;
 
     main: while (current < input.length) {
         let char = input[current];
@@ -246,53 +259,30 @@ export function tokenizer(input: string): Token[] {
             continue;
         }
         else if (regLetter.test(char)) {
-            if(char === "i"){
-                let nextChar = input[++current];
-                if(nextChar === "n"){
-                    let nextNextChar = input[++current];
-                    if (regSpace.test(nextNextChar)) {
-                        tokens.push({
-                            kind: SyntaxKind.KEY_WORD_IN,
-                            text: "in"
-                        })
-
-                        ++current;
-                        continue main;
-                    }
-                }
-                else{
-                    --current;
-                }
-            }
-            else if (char === "n") {
-                let nextChar = input[++current];
-                if (nextChar === "o") {
-                    let nextNextChar = input[++current];
-                    if (nextNextChar === "t") {
-                        tokens.push({
-                            kind: SyntaxKind.KEY_WORD_NOT,
-                            text: "not"
-                        })
-
-                        ++current;
-                        continue main;
-                    }
-
-                    else {
-                        --current;
-                    }
-                }
-                else {
-                    --current;
-                }
-            }
-
             let value = char;
             let nextChar = input[++current];
-            while(regLetter.test(nextChar) && current < input.length){
+            while ((regLetter.test(nextChar) || regNum.test(nextChar)) && current < input.length) {
                 value += nextChar;
 
                 nextChar = input[++current];
+            }
+
+            if("in" === value){
+                let lastToken = tokens[tokens.length - 1];
+                if (lastToken.kind === SyntaxKind.IDENTIFIER && lastToken.text === "not") {
+                    tokens.pop();
+                    tokens.push({
+                        kind: SyntaxKind.OPERATOR_NOT_IN,
+                        text: `${lastToken.text} ${value}`
+                    })
+                }
+                else {
+                    tokens.push({
+                        kind: SyntaxKind.OPERATOR_IN,
+                        text: value
+                    })
+                }
+                continue;
             }
 
             tokens.push({
@@ -324,8 +314,8 @@ export function evl(tokens: Token[], context: Context): boolean {
             [SyntaxKind.OPERATOR_GREATER_THAN]: 3,
             [SyntaxKind.OPERATOR_LESS_THEN]: 3,
             [SyntaxKind.OPERATOR_MATCHES]: 3,
-            [SyntaxKind.KEY_WORD_IN]: 3,
-            [SyntaxKind.KEY_WORD_NOT]: 3, // 实际处理为 not in
+            [SyntaxKind.OPERATOR_IN]: 3,
+            [SyntaxKind.OPERATOR_NOT_IN]: 3,
             [SyntaxKind.OPERATOR_AND]: 2,
             [SyntaxKind.OPERATOR_OR]: 1,
         };
@@ -335,13 +325,6 @@ export function evl(tokens: Token[], context: Context): boolean {
 
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i];
-
-            // 合并 not + in 为 not in
-            if (token.kind === SyntaxKind.KEY_WORD_NOT && tokens[i + 1]?.kind === SyntaxKind.KEY_WORD_IN) {
-                operatorStack.push({ kind: SyntaxKind.KEY_WORD_NOT, text: "not in" });
-                i++; // 跳过 'in'
-                continue;
-            }
 
             switch (token.kind) {
                 case SyntaxKind.IDENTIFIER:
@@ -386,8 +369,8 @@ export function evl(tokens: Token[], context: Context): boolean {
             SyntaxKind.OPERATOR_GREATER_THAN,
             SyntaxKind.OPERATOR_LESS_THEN,
             SyntaxKind.OPERATOR_MATCHES,
-            SyntaxKind.KEY_WORD_IN,
-            SyntaxKind.KEY_WORD_NOT,
+            SyntaxKind.OPERATOR_IN,
+            SyntaxKind.OPERATOR_NOT_IN,
             SyntaxKind.OPERATOR_AND,
             SyntaxKind.OPERATOR_OR,
         ].includes(kind);

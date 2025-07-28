@@ -2,7 +2,7 @@ import { Context, evl, tokenizer } from "./index";
 
 
 
-const context: Context = {
+const context: Context = new class extends Context {
     evlExp(expression: string) {
         const ctx: Record<string, any> = {
             editorLangId: "typescript",
@@ -13,21 +13,12 @@ const context: Context = {
             supportedFolders: ["readme.md", "main.ts"],
             isMac: true,
         };
-        return ctx[expression];
-    },
-    evlOp(operator: string, left: any, right: any) {
-        switch (operator) {
-            case "==": return left === right;
-            case "!=": return left !== right;
-            case ">": return left > right;
-            case "<": return left < right;
-            case "in": return Array.isArray(right) && right.includes(left);
-            case "not in": return Array.isArray(right) && !right.includes(left);
-            case "=~": return new RegExp(right).test(left);
-            case "&&": return left && right;
-            case "||": return left || right;
-            default: throw new Error(`Unknown operator: ${operator}`);
+        let v = ctx[expression];
+        if(!v){
+            console.error(`unknown expression:${expression}`)
+            return false;
         }
+        return v;
     }
 };
 
@@ -41,7 +32,7 @@ const expressions: [string, boolean][] = [
     ["workspaceFolderCount > 0 && gitOpenRepositoryCount < 2", true],
     ["workspaceFolderCount > 0 && (gitOpenRepositoryCount > 2 || isMac)", true],
     ["isMac", true],
-    ["editorLangId", true]
+    ["editorLangId1", true]
 ];
 
 for (const [exp,res] of expressions) {
