@@ -12,9 +12,10 @@ const context: Context = new class extends Context {
             resourceFilename: "readme1.md",
             supportedFolders: ["readme.md", "main.ts"],
             isMac: true,
+            _12editorLangId2:false
         };
         let v = ctx[expression];
-        if(!v){
+        if(v === undefined){
             console.error(`unknown expression:${expression}`)
             return false;
         }
@@ -32,7 +33,10 @@ const expressions: [string, boolean][] = [
     ["workspaceFolderCount > 0 && gitOpenRepositoryCount < 2", true],
     ["workspaceFolderCount > 0 && (gitOpenRepositoryCount > 2 || isMac)", true],
     ["isMac", true],
-    ["editorLangId1", true]
+    ["editorLangId1", true],
+    ["_12editorLangId2", false],
+    ["__12editorLangId2", false],
+
 ];
 
 for (const [exp,res] of expressions) {

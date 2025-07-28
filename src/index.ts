@@ -33,14 +33,12 @@ class PositionError extends Error{
         super(messageText.join("\n"));
     }
 }
-
-class TokenError extends Error{
-    constructor(public token:Token, message: string) {
-        let text = [message];
-        text.push(`    ${token.text}    `);
-        text.push(" ".repeat(4) + "^");
-        
-        super(text.join("\n"));
+class RangeError extends Error{
+    constructor(text: string, message: string) {
+        let messageText = [message];
+        messageText.push(text);
+        messageText.push("^".repeat(text.length));
+        super(messageText.join("\n"));
     }
 }
 
@@ -66,8 +64,7 @@ export function tokenizer(input: string): Token[] {
     let current = 0;
     let tokens: Token[] = [];
     let regSpace = /\s/;
-    let regNum = /\d/;
-    let regLetter = /[a-zA-Z_]/;
+    let regIdentifier = /[a-zA-Z\d_]/;
 
     main: while (current < input.length) {
         let char = input[current];
@@ -239,57 +236,49 @@ export function tokenizer(input: string): Token[] {
             ++current;
             continue;
         }
-        else if (regNum.test(char)) {
-            let value = char;
-            let nextChar = input[++current];
-
-            while((regNum.test(nextChar) || /\./.test(nextChar)) && current < input.length){
+        else if (regIdentifier.test(char)) {
+            let value = char, nextChar = char;
+            let pos = current;
+            
+            while (++current < input.length && (regIdentifier.test(nextChar = input[current]) || /\./.test(nextChar))) {
                 value += nextChar;
-                nextChar = input[++current];
             }
-
-            if(!/^\d+.?\d*$/.test(value)){
-                throw new PositionError(current, input, "invalid number:" + value);
-            }
-
-            tokens.push({
-                kind: SyntaxKind.NUMBER,
-                text: value
-            });
-            continue;
-        }
-        else if (regLetter.test(char)) {
-            let value = char;
-            let nextChar = input[++current];
-            while ((regLetter.test(nextChar) || regNum.test(nextChar)) && current < input.length) {
-                value += nextChar;
-
-                nextChar = input[++current];
-            }
-
-            if("in" === value){
-                let lastToken = tokens[tokens.length - 1];
-                if (lastToken.kind === SyntaxKind.IDENTIFIER && lastToken.text === "not") {
-                    tokens.pop();
-                    tokens.push({
-                        kind: SyntaxKind.OPERATOR_NOT_IN,
-                        text: `${lastToken.text} ${value}`
-                    })
-                }
-                else {
-                    tokens.push({
-                        kind: SyntaxKind.OPERATOR_IN,
-                        text: value
-                    })
-                }
+            
+            if (/^\d+.?\d*$/.test(value)) {
+                tokens.push({
+                    kind: SyntaxKind.NUMBER,
+                    text: value
+                });
                 continue;
             }
 
-            tokens.push({
-                kind: SyntaxKind.IDENTIFIER,
-                text: value
-            })
-            continue;
+            if (/^[a-zA-Z_][a-zA-Z_\d]*$/.test(value)) {
+                if ("in" === value) {
+                    let lastToken = tokens[tokens.length - 1];
+                    if (lastToken.kind === SyntaxKind.IDENTIFIER && lastToken.text === "not") {
+                        tokens.pop();
+                        tokens.push({
+                            kind: SyntaxKind.OPERATOR_NOT_IN,
+                            text: `${lastToken.text} ${value}`
+                        })
+                    }
+                    else {
+                        tokens.push({
+                            kind: SyntaxKind.OPERATOR_IN,
+                            text: value
+                        })
+                    }
+                    continue;
+                }
+
+                tokens.push({
+                    kind: SyntaxKind.IDENTIFIER,
+                    text: value
+                })
+                continue;
+            }
+
+            throw new RangeError(input, "invalid identifier: " + value);
         }
         else{
             throw new PositionError(current, input, "unexpected character '" + char + "'")
@@ -408,6 +397,12 @@ export function evl(tokens: Token[], context: Context): boolean {
         }
 
         return Boolean(stack[0]);
-        
+    }
+}
+
+export class ExpressionEvl{
+    evl(input: string, context: Context): boolean {
+        const tokens = tokenizer(input);
+        return evl(tokens, context);
     }
 }
