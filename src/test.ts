@@ -2,32 +2,50 @@ import { Context, evl, tokenizer } from "./index";
 
 
 
-const context = new class implements Context {
-    evlExp(expression: String): any {
-        // throw new Error("Method not implemented.");
-        if(expression === "editorLangId"){
-            return "typescript1";
+const context: Context = {
+    evlExp(expression: string) {
+        const ctx: Record<string, any> = {
+            editorLangId: "typescript",
+            resourceScheme: "untitle",
+            gitOpenRepositoryCount: 1,
+            workspaceFolderCount: 1,
+            resourceFilename: "readme1.md",
+            supportedFolders: ["readme.md", "main.ts"],
+            isMac: true,
+        };
+        return ctx[expression];
+    },
+    evlOp(operator: string, left: any, right: any) {
+        switch (operator) {
+            case "==": return left === right;
+            case "!=": return left !== right;
+            case ">": return left > right;
+            case "<": return left < right;
+            case "in": return Array.isArray(right) && right.includes(left);
+            case "not in": return Array.isArray(right) && !right.includes(left);
+            case "=~": return new RegExp(right).test(left);
+            case "&&": return left && right;
+            case "||": return left || right;
+            default: throw new Error(`Unknown operator: ${operator}`);
         }
-        else if(expression === "resourceScheme"){
-            return "untitled";
-        }
-        return "";
     }
-    evlOp(operator: String, left: any, right: any) {
-        if (operator === "==" || operator === "===") {
-            return left === right
-        }
-        return false;
-        // throw new Error("Method not implemented.");
-    }
-}
+};
 
-// console.log(tokenizer("!(foo || bar) && baz"));
-console.log(evl(tokenizer("editorLangId == 'typescript'"), context));
-console.log(evl(tokenizer("resourceExtname != '.js'"), context));
-console.log(evl(tokenizer("gitOpenRepositoryCount >= 1"), context));
-console.log(evl(tokenizer("workspaceFolderCount < 2"), context));
-console.log(evl(tokenizer("resourceScheme =~ /^untitled$|^file$/"), context));
-console.log(evl(tokenizer("resourceFilename in supportedFolders"), context));
-console.log(evl(tokenizer("resour ceFilename not in supportedFolders"), context));
-console.log("pause");
+// 执行测试表达式
+const expressions: [string, boolean][] = [
+    ["editorLangId == 'typescript'", true],
+    ["resourceScheme =~ /file/", false],
+    ["editorLangId == 'typescript' && isMac", true],
+    ["resourceFilename in supportedFolders", false],
+    ["resourceFilename not in supportedFolders", true],
+    ["workspaceFolderCount > 0 && gitOpenRepositoryCount < 2", true],
+    ["workspaceFolderCount > 0 && (gitOpenRepositoryCount > 2 || isMac)", true],
+    ["isMac", true],
+    ["editorLangId", true]
+];
+
+for (const [exp,res] of expressions) {
+    const tokens = tokenizer(exp);
+    const result = evl(tokens, context);
+    console.log(`${exp} => ${result}\ttest result: ${res} === ${result} => ${res === result}`);
+}

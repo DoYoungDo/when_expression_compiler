@@ -168,7 +168,7 @@ export function tokenizer(input: string): Token[] {
 
             tokens.push({
                 kind: SyntaxKind.OPERATOR_LESS_THEN,
-                text:`${char}${nextChar}`,
+                text:`${char}${include ? nextChar : ""}`,
                 include
             })
             continue;
@@ -183,7 +183,7 @@ export function tokenizer(input: string): Token[] {
 
             tokens.push({
                 kind: SyntaxKind.OPERATOR_GREATER_THAN,
-                text:`${char}${nextChar}`,
+                text:`${char}${include ? nextChar : ""}`,
                 include
             })
             continue;
@@ -260,6 +260,9 @@ export function tokenizer(input: string): Token[] {
                         continue main;
                     }
                 }
+                else{
+                    --current;
+                }
             }
             else if (char === "n") {
                 let nextChar = input[++current];
@@ -274,6 +277,13 @@ export function tokenizer(input: string): Token[] {
                         ++current;
                         continue main;
                     }
+
+                    else {
+                        --current;
+                    }
+                }
+                else {
+                    --current;
                 }
             }
 
@@ -299,65 +309,121 @@ export function tokenizer(input: string): Token[] {
     return tokens;
 }
 
-export function evl(tokens: Token[], context: Context): boolean {
-    let current = 0;
-    let opStack:string[] = [];
-    let valueStack: any[] = [];
-    while (current < tokens.length) {
-        let token = tokens[current];
-        if(token.kind === SyntaxKind.IDENTIFIER){
-            let nextToken = tokens[++current];
-            if(!isOp(nextToken)){
-                throw new TokenError(nextToken, "expected operator")
-            }
+// 定义各类运算符的优先级，数值越大优先级越高
+const OPERATOR_PRECEDENCE: Record<string, number> = {
+    [SyntaxKind.OPERATOR_NOT]: 4,
+    [SyntaxKind.OPERATOR_EQUALITY]: 3,
+    [SyntaxKind.OPERATOR_INQUALITY]: 3,
+    [SyntaxKind.OPERATOR_GREATER_THAN]: 3,
+    [SyntaxKind.OPERATOR_LESS_THEN]: 3,
+    [SyntaxKind.OPERATOR_MATCHES]: 3,
+    [SyntaxKind.KEY_WORD_IN]: 3,
+    [SyntaxKind.KEY_WORD_NOT]: 3, // 实际处理为 not in
+    [SyntaxKind.OPERATOR_AND]: 2,
+    [SyntaxKind.OPERATOR_OR]: 1,
+};
 
-            valueStack.push(context.evlExp(token.text));
+// 判断是否是二元运算符
+const isBinaryOperator = (kind: SyntaxKind) => [
+    SyntaxKind.OPERATOR_EQUALITY,
+    SyntaxKind.OPERATOR_INQUALITY,
+    SyntaxKind.OPERATOR_GREATER_THAN,
+    SyntaxKind.OPERATOR_LESS_THEN,
+    SyntaxKind.OPERATOR_MATCHES,
+    SyntaxKind.KEY_WORD_IN,
+    SyntaxKind.KEY_WORD_NOT,
+    SyntaxKind.OPERATOR_AND,
+    SyntaxKind.OPERATOR_OR,
+].includes(kind);
+
+// 判断是否是单目运算符
+const isUnaryOperator = (kind: SyntaxKind) => kind === SyntaxKind.OPERATOR_NOT;
+
+// 将中缀表达式转换为后缀表达式（RPN）
+function toRPN(tokens: Token[]): Token[] {
+    const output: Token[] = [];
+    const operatorStack: Token[] = [];
+
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+
+        // 合并 not + in 为 not in
+        if (token.kind === SyntaxKind.KEY_WORD_NOT && tokens[i + 1]?.kind === SyntaxKind.KEY_WORD_IN) {
+            operatorStack.push({ kind: SyntaxKind.KEY_WORD_NOT, text: "not in" });
+            i++; // 跳过 'in'
             continue;
         }
-        else if(isOp(token)){
-            if(valueStack.length < 1){
-                throw new TokenError(token, "unexpected operator")
-            }
 
-            let tokenText = token.text;
-            let nextToken = tokens[++current];
-            do {
-                if (isOp(nextToken)) {
-                    if (token.kind === SyntaxKind.KEY_WORD_NOT && nextToken.kind === SyntaxKind.KEY_WORD_IN) {
-                        tokenText = "not in";
-                        nextToken = tokens[++current];
-                        break;
-                    }
-                    throw new TokenError(nextToken, "unexpected operator")
+        switch (token.kind) {
+            case SyntaxKind.IDENTIFIER:
+            case SyntaxKind.STRING:
+            case SyntaxKind.NUMBER:
+            case SyntaxKind.REG_EXPRESSTION:
+                output.push(token);
+                break;
+            case SyntaxKind.BRACKET_LEFT:
+                operatorStack.push(token);
+                break;
+            case SyntaxKind.BRACKET_RIGHT:
+                while (operatorStack.length > 0 && operatorStack[operatorStack.length - 1].kind !== SyntaxKind.BRACKET_LEFT) {
+                    output.push(operatorStack.pop()!);
                 }
-            } while (0);
-
-            if(nextToken.kind === SyntaxKind.STRING || nextToken.kind === SyntaxKind.NUMBER || nextToken.kind === SyntaxKind.REG_EXPRESSTION){
-                valueStack.push(context.evlOp(tokenText, valueStack.pop(), nextToken.text))
-                ++current;
-                continue;
-            }
-            else if(nextToken.kind === SyntaxKind.IDENTIFIER){
-                valueStack.push(context.evlOp(tokenText, valueStack.pop(), context.evlExp(nextToken.text)))
-                ++current;
-                continue;
-            }
-
+                operatorStack.pop(); // 弹出左括号
+                break;
+            default:
+                while (
+                    operatorStack.length > 0 &&
+                    OPERATOR_PRECEDENCE[operatorStack[operatorStack.length - 1].kind] >= OPERATOR_PRECEDENCE[token.kind]
+                ) {
+                    output.push(operatorStack.pop()!);
+                }
+                operatorStack.push(token);
         }
     }
 
-    function isOp(token:Token){
-        return token.kind === SyntaxKind.OPERATOR_NOT ||
-            token.kind === SyntaxKind.OPERATOR_AND ||
-            token.kind === SyntaxKind.OPERATOR_OR ||
-            token.kind === SyntaxKind.OPERATOR_EQUALITY ||
-            token.kind === SyntaxKind.OPERATOR_INQUALITY ||
-            token.kind === SyntaxKind.OPERATOR_GREATER_THAN ||
-            token.kind === SyntaxKind.OPERATOR_LESS_THEN ||
-            token.kind === SyntaxKind.OPERATOR_MATCHES ||
-            token.kind === SyntaxKind.KEY_WORD_IN ||
-            token.kind === SyntaxKind.KEY_WORD_NOT;
+    while (operatorStack.length > 0) {
+        output.push(operatorStack.pop()!);
+    }
+    return output;
+}
+
+
+// 执行后缀表达式求值
+function evalRPN(rpn: Token[], context: Context): boolean {
+    const stack: any[] = [];
+
+    for (const token of rpn) {
+        // 获取变量值
+        if ([SyntaxKind.IDENTIFIER].includes(token.kind)) {
+            stack.push(context.evlExp(token.text));
+        }
+        // 常量：string/number/regex 直接 eval
+        else if ([SyntaxKind.STRING, SyntaxKind.REG_EXPRESSTION].includes(token.kind)) {
+            stack.push(token.text);
+        }
+        else if ([SyntaxKind.NUMBER].includes(token.kind)) {
+            stack.push(Number(token.text));
+        }
+        // 逻辑非
+        else if (isUnaryOperator(token.kind)) {
+            const value = stack.pop();
+            stack.push(!value);
+        }
+        // 二元运算符
+        else if (isBinaryOperator(token.kind)) {
+            let right = stack.pop();
+            let left = stack.pop();
+
+            const result = context.evlOp(token.text, left, right);
+            stack.push(result);
+        }
     }
 
-    return valueStack.length > 0 ? valueStack[0] : false;
+    return Boolean(stack[0]);
+}
+
+// 主入口：中缀 => 后缀 => 求值
+export function evl(tokens: Token[], context: Context): boolean {
+    const rpn = toRPN(tokens);
+    return evalRPN(rpn, context);
 }
