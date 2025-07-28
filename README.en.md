@@ -1,3 +1,6 @@
+[中文](README.md)
+
+
 # When Expression Compiler
 
 This is a simple When expression compiler project used to parse and execute VS Code `when` expressions.

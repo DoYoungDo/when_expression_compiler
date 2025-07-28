@@ -1,3 +1,5 @@
+[English](README.en.md)
+
 # When Expression Compiler
 
 这是一个简单的 When 表达式编译器项目，用于解析和执行 vscode `when` 表达式。
