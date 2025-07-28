@@ -1,12 +1,8 @@
 # When Expression Compiler
 
-这是一个简单的 When 表达式编译器项目，用于解析和验证特定语法的 `when` 表达式。
+这是一个简单的 When 表达式编译器项目，用于解析和执行 vscode `when` 表达式。
 
-## 特性
-
-- 定义了语法种类（`SyntaxKind`）
-- 提供了位置错误（`PositionError`）和标记错误（`TokenError`）类用于错误处理
-- 包含测试用例来验证表达式解析的正确性
+> [vscode when 表达式规范](https://code.visualstudio.com/api/references/when-clause-contexts)
 
 ## 项目结构
 

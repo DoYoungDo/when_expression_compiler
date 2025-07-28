@@ -1,20 +1,14 @@
-
-
 # When Expression Compiler
 
-This is a simple When Expression Compiler project used to parse and validate `when` expressions with a specific syntax.
+This is a simple When expression compiler project used to parse and execute VS Code `when` expressions.
 
-## Features
-
-- Defines syntax types (`SyntaxKind`)
-- Provides `PositionError` and `TokenError` classes for error handling
-- Includes test cases to verify the correctness of expression parsing
+> [VS Code when expression specification](https://code.visualstudio.com/api/references/when-clause-contexts)
 
 ## Project Structure
 
-- `src/index.ts`: Core type and error class definitions
-- `src/test.ts`: Test cases used to validate the parsing results of `when` expressions
-- Other configuration files such as `package.json`, `tsconfig.json`, etc., for project management and build configuration
+- `src/index.ts`: Definition of core types and error classes
+- `src/test.ts`: Test cases for verifying the parsing results of `when` expressions
+- Other configuration files such as `package.json` and `tsconfig.json` are used for project management and build configuration
 
 ## Usage
 
@@ -23,15 +17,20 @@ This is a simple When Expression Compiler project used to parse and validate `wh
    npm install
    ```
 
-2. Run tests:
+2. Build:
    ```bash
-   npm test
+   npm run build
+   ```
+
+3. Run tests:
+   ```bash
+   npm run test
    ```
 
 ## Contribution
 
-Pull requests and issue reports are welcome. Please follow the project's coding standards and ensure all tests pass.
+Welcome to submit Pull Request or report issues. Please follow the project's coding guidelines and ensure tests are passed.
 
 ## License
 
-This project follows the MIT License. For details, please see the `LICENSE` file.
+This project is licensed under the MIT License. See the `LICENSE` file for details.
