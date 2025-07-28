@@ -6,8 +6,8 @@
 
 ## 项目结构
 
-- `src/index.ts`：核心类型和错误类定义
-- `src/test.ts`：测试用例，用于验证 `when` 表达式的解析结果
+- [`src/index.ts`](src/index.ts)：核心类型和错误类定义
+- [`src/test.ts`](src/test.ts)：测试用例，用于验证 `when` 表达式的解析结果
 - 其他配置文件如 `package.json`、`tsconfig.json` 等用于项目管理和构建配置
 
 ## 使用方法
