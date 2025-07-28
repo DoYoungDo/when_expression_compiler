@@ -23,7 +23,12 @@
 
 2. 运行测试：
    ```bash
-   npm test
+   npm run build
+   ```
+
+3. 运行测试：
+   ```bash
+   npm run test
    ```
 
 ## 贡献
