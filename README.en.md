@@ -3,7 +3,7 @@
 
 # When Expression Compiler
 
-This is a simple When expression compiler project used to parse and execute VS Code `when` expressions.
+This is a simple When expression compiler project with fewer than 500 lines of code (including test code), used to interpret and execute VS Code `when` expressions.
 
 > [VS Code when expression specification](https://code.visualstudio.com/api/references/when-clause-contexts)
 
