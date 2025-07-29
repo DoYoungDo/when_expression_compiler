@@ -1,6 +1,4 @@
-import { Context, evl, tokenizer } from "./index";
-
-
+import { Context, Expression, tokenizer } from "./index";
 
 const context: Context = new class extends Context {
     evlExp(expression: string) {
@@ -12,7 +10,7 @@ const context: Context = new class extends Context {
             resourceFilename: "readme1.md",
             supportedFolders: ["readme.md", "main.ts"],
             isMac: true,
-            _12editorLangId2:false
+            isWin: false
         };
         let v = ctx[expression];
         if(v === undefined){
@@ -25,22 +23,21 @@ const context: Context = new class extends Context {
 
 // 执行测试表达式
 const expressions: [string, boolean][] = [
-    ["editorLangId == 'typescript'", true],
+    ["editorLangId == 'typescript' || editorLangId === 'typescript'", true],
+    ["editorLangId != 'typescript' || editorLangId !== 'typescript'", false],
     ["resourceScheme =~ /file/", false],
     ["editorLangId == 'typescript' && isMac", true],
     ["resourceFilename in supportedFolders", false],
     ["resourceFilename not in supportedFolders", true],
     ["workspaceFolderCount > 0 && gitOpenRepositoryCount < 2", true],
-    ["workspaceFolderCount > 0 && (gitOpenRepositoryCount > 2 || isMac)", true],
+    ["workspaceFolderCount > 0 && (gitOpenRepositoryCount >= 1 || isMac)", true],
+    ["workspaceFolderCount > 0 && (gitOpenRepositoryCount > 1 || isWin)", false],
     ["isMac", true],
-    ["editorLangId1", true],
-    ["_12editorLangId2", false],
-    ["__12editorLangId2", false],
-
+    ["isWin", false],
+    ["__undefined_identifer", false],
 ];
 
 for (const [exp,res] of expressions) {
-    const tokens = tokenizer(exp);
-    const result = evl(tokens, context);
-    console.log(`${exp} => ${result}\ttest result: ${res} === ${result} => ${res === result}`);
+    const result = Expression.eval(exp, context);
+    console.log(`${exp} => ${result}\t预期结果:${res}, 测试${res === result ? "成功" : "失败"}`);
 }
