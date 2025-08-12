@@ -2,7 +2,7 @@
 
 # When Expression Compiler
 
-这是一个不到500行（含测试代码）的简单的 When 表达式编译器项目，用于解释执行 vscode `when` 表达式。
+这是一个不到500行（含测试代码）的简单的 When 表达式解释器项目，用于解释执行 vscode `when` 表达式。
 
 > [vscode when 表达式规范](https://code.visualstudio.com/api/references/when-clause-contexts)
 
