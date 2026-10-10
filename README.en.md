@@ -3,9 +3,17 @@
 
 # When Expression Compiler
 
-This is a small TypeScript project for learning how to build a simple interpreter by evaluating VS Code `when` expressions.
+This is a simple When expression compiler project with fewer than 500 lines of code (including test code), used to interpret and execute VS Code `when` expressions.
 
 > [VS Code when expression specification](https://code.visualstudio.com/api/references/when-clause-contexts)
+
+## Try Online
+
+Open the [When Expression Laboratory](https://doyoungdo.github.io/when_expression_compiler) to explore how an interpreter works interactively, with no installation required.
+
+1. Choose a built-in example or enter your own `when` expression and configure its context variables.
+2. Use the next-action control in the Tokens, RPN conversion, and evaluation stack panels to follow character scanning, operator precedence, and evaluation step by step.
+3. Try the error examples to see how failures are detected during tokenization, syntax validation, or evaluation. The interface is currently in Chinese.
 
 ## Project Structure
 
@@ -29,14 +37,6 @@ This is a small TypeScript project for learning how to build a simple interprete
    ```bash
    npm run test
    ```
-
-## Syntax Validation
-
-Tokenization recognizes tokens; RPN conversion validates operand, operator, and parenthesis order.
-For example, `editorLangId == 'typescript && ' isMac` has balanced quotes but lacks an operator between the string and `isMac`. It throws `SyntaxError` before reading the context or evaluating values.
-Adjacent operands, missing operands, empty parentheses, and unmatched parentheses are rejected. Empty expressions still return `false`.
-`npm test` asserts results and syntax failures, exiting with a nonzero status on failure.
-The HTML teaching prototype has a separate browser implementation. Parsing changes must be checked in both implementations; it does not directly call `src/index.ts`.
 
 ## Contribution
 
