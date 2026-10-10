@@ -33,6 +33,10 @@
         .brand-title { font-size: 14px; font-weight: 700; letter-spacing: .02em; }
         .brand-subtitle { color: #b7c8d8; font-size: 11px; margin-top: 2px; }
         .topbar-status { display: flex; align-items: center; gap: 8px; color: #d2dfeb; font-size: 11px; }
+        .topbar-actions { display: flex; align-items: center; gap: 16px; }
+        .source-link { display: inline-flex; align-items: center; min-height: 44px; color: #fff; font-size: 12px; white-space: nowrap; text-underline-offset: 4px; }
+        .source-link:hover { color: #b7d5ff; }
+        .source-link:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #65c495; }
         main { width: min(1420px, calc(100% - 64px)); margin: 0 auto; padding: 36px 0 56px; }
         .intro { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin-bottom: 28px; }
@@ -207,7 +211,10 @@
                     <div class="brand-subtitle" data-design-id="brand-subtitle">Interpreter learning prototype</div>
                 </div>
             </div>
-            <div class="topbar-status" data-design-id="runtime-status"><span class="status-dot"></span><span>本地运行 · 无网络依赖</span></div>
+            <div class="topbar-actions" data-design-id="topbar-actions">
+                <div class="topbar-status" data-design-id="runtime-status"><span class="status-dot"></span><span>本地运行 · 无网络依赖</span></div>
+                <a class="source-link" href="https://github.com/DoYoungDo/when_expression_compiler" target="_blank" rel="noopener noreferrer" aria-label="源码仓库（新标签页打开）" data-design-id="source-link">源码仓库</a>
+            </div>
         </header>
         <main>
             <section class="intro" data-design-id="intro-section">
