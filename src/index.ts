@@ -329,9 +329,28 @@ export function evaluate(tokens: Token[], context: Context): boolean {
 
         const output: Token[] = [];
         const operatorStack: Token[] = [];
+        let expectsOperand = true;
+        let depth = 0;
+        const syntaxError = (index: number, message: string): never => {
+            throw new SyntaxError(`${message} at token ${index + 1} (${tokens[index]?.text ?? "EOF"})`);
+        };
 
         for (let i = 0; i < tokens.length; i++) {
             const token = tokens[i];
+            const operand = [SyntaxKind.IDENTIFIER, SyntaxKind.STRING, SyntaxKind.NUMBER, SyntaxKind.REG_EXPRESSTION].includes(token.kind);
+            if (operand || token.kind === SyntaxKind.BRACKET_LEFT || token.kind === SyntaxKind.OPERATOR_NOT) {
+                if (!expectsOperand) syntaxError(i, "Expected operator before");
+                if (token.kind === SyntaxKind.BRACKET_LEFT) depth++;
+                expectsOperand = !operand;
+            } else if (token.kind === SyntaxKind.BRACKET_RIGHT) {
+                if (depth === 0) syntaxError(i, "Unmatched closing parenthesis");
+                if (expectsOperand) syntaxError(i, "Expected operand before");
+                depth--;
+            } else {
+                if (!(token.kind in OPERATOR_PRECEDENCE)) syntaxError(i, "Unknown operator");
+                if (expectsOperand) syntaxError(i, "Expected operand before");
+                expectsOperand = true;
+            }
 
             switch (token.kind) {
                 case SyntaxKind.IDENTIFIER:
@@ -352,6 +371,7 @@ export function evaluate(tokens: Token[], context: Context): boolean {
                 default:
                     while (
                         operatorStack.length > 0 &&
+                        token.kind !== SyntaxKind.OPERATOR_NOT &&
                         OPERATOR_PRECEDENCE[operatorStack[operatorStack.length - 1].kind] >= OPERATOR_PRECEDENCE[token.kind]
                     ) {
                         output.push(operatorStack.pop()!);
@@ -360,6 +380,8 @@ export function evaluate(tokens: Token[], context: Context): boolean {
             }
         }
 
+        if (tokens.length > 0 && expectsOperand) syntaxError(tokens.length, "Expected operand before");
+        if (depth !== 0) syntaxError(tokens.length, "Missing closing parenthesis before");
         while (operatorStack.length > 0) {
             output.push(operatorStack.pop()!);
         }
@@ -402,10 +424,12 @@ export function evaluate(tokens: Token[], context: Context): boolean {
             }
             // 逻辑非
             else if (isUnaryOperator(token.kind)) {
+                if (stack.length < 1) throw new SyntaxError(`Missing operand for ${token.text}`);
                 stack.push(!stack.pop());
             }
             // 二元运算符
             else if (isBinaryOperator(token.kind)) {
+                if (stack.length < 2) throw new SyntaxError(`Missing operands for ${token.text}`);
                 let right = stack.pop();
                 let left = stack.pop();
 
@@ -414,6 +438,7 @@ export function evaluate(tokens: Token[], context: Context): boolean {
             }
         }
 
+        if (rpn.length > 0 && stack.length !== 1) throw new SyntaxError("Expected exactly one result");
         return !!stack[0];
     }
 }

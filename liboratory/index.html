@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>When 表达式实验室</title>
+    <style>
+        :root {
+            --ink: #17202a;
+            --muted: #65717e;
+            --line: #d9e0e7;
+            --paper: #f6f8fa;
+            --panel: #ffffff;
+            --navy: #17324d;
+            --blue: #2d6cdf;
+            --blue-soft: #eaf1ff;
+            --orange: #d97835;
+            --orange-soft: #fff1e5;
+            --green: #21845b;
+            --green-soft: #e8f6ef;
+            --red: #c84b4b;
+            --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; color: var(--ink); background: var(--paper); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+        button, input, textarea { font: inherit; }
+        button { cursor: pointer; }
+        button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid rgba(45,108,223,.28); outline-offset: 2px; }
+        .app-shell { min-height: 100vh; }
+        .topbar { position: sticky; top: 0; z-index: 100; height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; background: var(--navy); color: #fff; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.44); color: #fff; font-family: var(--mono); font-size: 13px; }
+        .brand-title { font-size: 14px; font-weight: 700; letter-spacing: .02em; }
+        .brand-subtitle { color: #b7c8d8; font-size: 11px; margin-top: 2px; }
+        .topbar-status { display: flex; align-items: center; gap: 8px; color: #d2dfeb; font-size: 11px; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #65c495; }
+        main { width: min(1420px, calc(100% - 64px)); margin: 0 auto; padding: 36px 0 56px; }
+        .intro { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin-bottom: 28px; }
+        h1, h2, h3, p { margin: 0; }
+        .intro h1 { font-size: clamp(24px, 2.7vw, 36px); line-height: 1.15; letter-spacing: -.02em; }
+        .intro p { color: var(--muted); font-size: 13px; line-height: 1.65; margin-top: 9px; }
+        .step-count { min-width: 155px; border-left: 3px solid var(--orange); padding-left: 12px; color: var(--muted); font-size: 11px; line-height: 1.55; }
+        .step-count strong { display: block; color: var(--ink); font-family: var(--mono); font-size: 16px; }
+        .workspace { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr); gap: 18px; align-items: start; }
+        .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+        .editor-panel { grid-column: 1 / -1; min-width: 0; padding: 22px; }
+        .panel-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .panel-heading h2 { font-size: 14px; }
+        .eyebrow { color: var(--muted); font-family: var(--mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+        .editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 18px; }
+        label { display: block; color: var(--muted); font-size: 11px; font-weight: 700; margin-bottom: 7px; }
+        textarea { width: 100%; min-height: 116px; resize: vertical; border: 1px solid #b9c5d1; border-radius: 5px; padding: 12px; color: #20354a; background: #fbfcfd; font-family: var(--mono); font-size: 12px; line-height: 1.7; }
+        .editor-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+        .button-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 5px; background: #fff; color: var(--ink); font-size: 12px; font-weight: 700; transition: border-color .16s, background-color .16s, transform .16s; }
+        .btn:hover { border-color: #91a5b8; background: #f7f9fb; }
+        .btn:active { transform: translateY(1px); }
+        .btn-primary { border-color: var(--blue); background: var(--blue); color: #fff; }
+        .btn-primary:hover { border-color: #215bc4; background: #215bc4; }
+        .btn-quiet { color: var(--blue); border-color: transparent; background: transparent; padding-inline: 6px; }
+        .select { width: 100%; border: 1px solid var(--line); border-radius: 5px; padding: 8px 9px; color: var(--ink); background: #fff; font-size: 12px; }
+        .context-list { display: grid; gap: 8px; }
+        .context-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 24px; gap: 5px; align-items: center; }
+        .context-key, .context-value { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 4px; padding: 7px 8px; color: var(--ink); background: #fff; font-family: var(--mono); font-size: 10px; }
+        .context-key { color: var(--muted); }
+        .context-value { width: 100%; border: 1px solid var(--line); border-radius: 4px; padding: 7px 8px; color: var(--ink); background: #fff; font-family: var(--mono); font-size: 11px; }
+        .context-note { color: var(--muted); font-size: 10px; line-height: 1.5; margin-top: 9px; }
+        .context-add { width: 100%; margin-top: 10px; border: 1px dashed #b9c5d1; border-radius: 4px; padding: 7px 8px; background: #fbfcfd; color: var(--blue); font-size: 11px; font-weight: 700; }
+        .context-remove { width: 24px; height: 28px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 15px; line-height: 1; }
+        .context-remove:hover { background: #fff0f0; color: var(--red); }
+        .flow-panel { grid-column: 1 / -1; padding: 20px 22px 18px; }
+        .flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+        .flow-step { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 0; color: #8a96a3; font-size: 12px; font-weight: 700; }
+        .flow-step:not(:last-child)::after { content: ""; position: absolute; left: 31px; right: 0; top: 23px; height: 1px; background: var(--line); z-index: 0; }
+        .flow-index { position: relative; z-index: 1; display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 50%; background: #fff; font-family: var(--mono); font-size: 11px; }
+        .flow-step.active { color: var(--blue); }
+        .flow-step.active .flow-index { border-color: var(--blue); background: var(--blue-soft); color: var(--blue); }
+        .flow-step.done { color: var(--green); }
+        .flow-step.done .flow-index { border-color: var(--green); background: var(--green-soft); color: var(--green); }
+        .flow-step.failed, .flow-step.failed .flow-index { color: var(--red); }
+        .flow-step.failed .flow-index { border-color: var(--red); background: #fff0f0; }
+        .results { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr); gap: 18px; }
+        .rpn-demo { font-size: 12px; }
+        .scan-source { white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/2 var(--mono); padding: 12px; background: #f1f5ff; border: 1px solid var(--line); border-radius: 4px; }
+        .scan-source mark { background: #ffe4a3; color: #17202a; outline: 1px solid #ad7412; }
+        .scan-source mark:empty { outline: none; }
+        .rpn-reason.scan-failure { border-left-color: var(--red); background: #fff0f0; }
+        .tab:disabled { opacity: .5; cursor: not-allowed; }
+        .demo-state { margin: 20px 0; }
+        .demo-state .token { max-width: 100%; flex-wrap: wrap; overflow-wrap: anywhere; padding-block: 6px; }
+        .rpn-input { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .rpn-input code, .rpn-state code { overflow-wrap: anywhere; white-space: normal; }
+        .rpn-current { outline: 2px solid var(--blue); background: var(--blue-soft); color: var(--blue); }
+        .rpn-reason { min-height: 104px; border-left: 3px solid var(--blue); padding: 12px; background: var(--blue-soft); }
+        .rpn-demo h3 { font-size: 12px; margin-bottom: 8px; }
+        .rpn-demo p { font-size: 11px; line-height: 1.7; }
+        .rpn-lanes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 20px; margin: 20px 0; }
+        .rpn-lanes section { min-width: 0; }
+        .rpn-lanes p { color: var(--muted); margin-bottom: 12px; }
+        .rpn-state { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px 6px; align-items: start; }
+        .rpn-state > span { color: var(--muted); font-size: 10px; padding-top: 4px; }
+        .rpn-state > div { display: flex; flex-wrap: wrap; gap: 5px; min-height: 32px; }
+        .rpn-controls { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--line); padding-top: 14px; }
+        .rpn-controls button:disabled { opacity: .5; cursor: default; }
+        @media (max-width: 620px) { .rpn-lanes { grid-template-columns: 1fr; } .rpn-controls button { min-height: 44px; } }
+        .trace-panel { overflow: hidden; }
+        .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); padding: 10px 14px 0; }
+        .tab { min-height: 40px; border: 0; border-bottom: 2px solid transparent; padding: 0 12px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 700; }
+        .tab.active { border-bottom-color: var(--blue); color: var(--blue); }
+        .trace-content { min-height: 328px; padding: 18px 20px 22px; }
+        .trace-topline { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .trace-title { font-size: 13px; font-weight: 700; }
+        .trace-meta { color: var(--muted); font-family: var(--mono); font-size: 10px; }
+        .token-grid { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .token { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; border: 1px solid var(--line); border-radius: 5px; padding: 0 9px; background: #fff; font-family: var(--mono); font-size: 11px; }
+        .token-kind { color: var(--muted); font-family: inherit; font-size: 9px; text-transform: uppercase; }
+        .token.identifier { border-color: #b8cceb; background: #f1f5ff; color: #2754a1; }
+        .token.operator { border-color: #f0c8a7; background: var(--orange-soft); color: #a5541f; }
+        .token.literal { border-color: #b8dbc8; background: var(--green-soft); color: #1d704e; }
+        .token.bracket { background: #f4f5f7; }
+        .empty-state { display: grid; min-height: 200px; place-items: center; border: 1px dashed var(--line); color: var(--muted); font-size: 12px; text-align: center; }
+        .trace-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .trace-table th { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .05em; text-align: left; text-transform: uppercase; }
+        .trace-table th, .trace-table td { border-bottom: 1px solid #edf0f3; padding: 10px 8px; vertical-align: top; }
+        .trace-table td:first-child { width: 46px; color: var(--muted); font-family: var(--mono); }
+        .stack { display: flex; flex-wrap: wrap; gap: 5px; }
+        .stack-item { border: 1px solid #cbd4de; border-radius: 3px; padding: 4px 7px; background: #f8fafc; font-family: var(--mono); font-size: 11px; }
+        .rpn-line { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: 5px; background: #fafbfc; }
+        .rpn-token { color: #2a4866; font-family: var(--mono); font-size: 12px; }
+        .rpn-token.op { color: var(--orange); }
+        .insight { padding: 22px; }
+        .insight h2 { font-size: 14px; margin-bottom: 7px; }
+        .insight-lead { color: var(--muted); font-size: 12px; line-height: 1.65; margin-bottom: 16px; }
+        .result-box { border-left: 3px solid var(--green); padding: 12px 14px; background: var(--green-soft); }
+        .result-box.error { border-color: var(--red); background: #fff0f0; }
+        .result-label { color: var(--muted); font-size: 11px; }
+        .result-value { color: var(--green); font-family: var(--mono); font-size: 21px; font-weight: 700; margin-top: 4px; }
+        .result-box.error .result-value { color: var(--red); font-size: 14px; line-height: 1.5; }
+        .insight-list { display: grid; gap: 12px; margin: 20px 0 0; padding: 0; list-style: none; }
+        .insight-list li { display: grid; grid-template-columns: 23px 1fr; gap: 9px; color: var(--muted); font-size: 11px; line-height: 1.6; }
+        .insight-num { display: grid; place-items: center; width: 23px; height: 23px; border: 1px solid #c6d5e3; border-radius: 50%; color: var(--blue); font-family: var(--mono); font-size: 10px; }
+        .insight-list strong { color: var(--ink); }
+        .step-controls { display: flex; gap: 8px; align-items: center; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
+        .step-controls .btn { flex: 1; }
+        .step-progress { color: var(--muted); font-family: var(--mono); font-size: 11px; text-align: center; min-width: 72px; }
+        .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+        .example-chip { border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; background: #fff; color: var(--muted); font-family: var(--mono); font-size: 10px; }
+        .example-chip:hover { border-color: var(--blue); color: var(--blue); }
+        .syntax-guide { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line); }
+        .syntax-guide h3 { font-size: 12px; margin-bottom: 10px; }
+        .syntax-guide p { color: var(--muted); font-size: 11px; line-height: 1.5; margin-bottom: 10px; }
+        .syntax-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 18px; }
+        .syntax-row { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 8px; align-items: baseline; border-bottom: 1px solid #edf0f3; padding: 6px 0; }
+        .syntax-operator { color: var(--orange); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+        .syntax-example { color: var(--muted); font-family: var(--mono); font-size: 10px; overflow-wrap: anywhere; }
+        .error-note { min-height: 18px; color: var(--red); font-size: 11px; margin-top: 8px; }
+        .brand-title, .panel-heading h2, .insight h2 { font-size: 15px; }
+        .intro p, textarea, .tab, .trace-title { font-size: 14px; }
+        .btn, .select, .flow-step, .rpn-demo, .rpn-demo h3,
+        .syntax-guide h3, .insight-lead, .empty-state, .rpn-token { font-size: 13px; }
+        .rpn-demo p, .syntax-guide p, .syntax-operator, .syntax-example,
+        .context-key, .context-value, .token, .stack-item, .insight-list li,
+        .example-chip, label, .context-add, .result-label, .error-note { font-size: 12px; }
+        .brand-subtitle, .topbar-status, .step-count, .flow-index, .step-progress { font-size: 12px; }
+        .context-note, .trace-meta, .rpn-state > span, .trace-table th, .insight-num { font-size: 11px; }
+        .eyebrow, .token-kind { font-size: 10px; }
+        .trace-table { font-size: 12px; }
+        .scan-source { font-size: 14px; }
+        .syntax-row { grid-template-columns: 54px minmax(0, 1fr); }
+        .syntax-guide p, .syntax-example { line-height: 1.7; }
+        .stack-item, .result-value { overflow-wrap: anywhere; }
+        @media (max-width: 920px) {
+            main { width: min(100% - 36px, 720px); padding-top: 26px; }
+            .intro { align-items: start; flex-direction: column; gap: 16px; }
+            .step-count { width: 100%; }
+            .workspace, .results { grid-template-columns: 1fr; }
+            .flow-panel { grid-column: auto; }
+        }
+        @media (max-width: 620px) {
+            .topbar { height: auto; min-height: 58px; padding: 12px 18px; }
+            .topbar-status { display: none; }
+            main { width: calc(100% - 28px); padding: 24px 0 40px; }
+            .intro h1 { font-size: 26px; }
+            .editor-panel, .insight { padding: 16px; }
+            .editor-layout { grid-template-columns: 1fr; }
+            .flow-panel { padding: 16px; overflow-x: auto; }
+            .flow { min-width: 580px; }
+            .trace-content { padding: 16px; overflow-x: auto; }
+            .trace-table { min-width: 480px; }
+            .editor-actions { align-items: stretch; flex-direction: column; }
+            .button-group { width: 100%; }
+            .button-group .btn { flex: 1; }
+            .syntax-grid { grid-template-columns: 1fr; }
+            .tabs { overflow-x: auto; }
+            .tab { white-space: nowrap; }
+        }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark" data-design-id="brand-mark">&gt;_</div>
+                <div>
+                    <div class="brand-title" data-design-id="brand-title">When 表达式实验室</div>
+                    <div class="brand-subtitle" data-design-id="brand-subtitle">Interpreter learning prototype</div>
+                </div>
+            </div>
+            <div class="topbar-status" data-design-id="runtime-status"><span class="status-dot"></span><span>本地运行 · 无网络依赖</span></div>
+        </header>
+        <main>
+            <section class="intro" data-design-id="intro-section">
+                <div>
+                    <h1 data-design-id="page-title">看见表达式如何被执行</h1>
+                    <p data-design-id="page-description">从一条 VS Code <code>when</code> 表达式出发，沿着词法分析、优先级转换和求值栈，逐步拆开一个简单解释器。</p>
+                </div>
+                <div class="step-count" data-design-id="step-summary"><strong id="summary-step">步骤 01 / 04</strong><span id="summary-label">输入表达式</span></div>
+            </section>
+
+            <section class="workspace" data-design-id="workspace">
+                <div class="panel editor-panel" data-design-id="expression-editor">
+                    <div class="panel-heading"><div><div class="eyebrow">01 · Input</div><h2 data-design-id="editor-heading">输入一条表达式</h2></div><button class="btn btn-quiet" id="reset-button" type="button" data-design-id="reset-button">恢复示例</button></div>
+                    <div class="editor-layout">
+                        <div>
+                            <label for="expression-input">表达式</label>
+                            <textarea id="expression-input" data-design-id="expression-input" spellcheck="false">editorLangId == 'typescript' && isMac</textarea>
+                            <div class="error-note" id="expression-error" data-design-id="expression-error"></div>
+                            <div class="editor-actions">
+                                <div class="button-group"><button class="btn btn-primary" id="run-button" type="button" data-design-id="run-button">重新解析</button><button class="btn" id="random-button" type="button" data-design-id="random-button">换一个例子</button></div>
+                                <span class="eyebrow" id="token-count" data-design-id="token-count">7 tokens</span>
+                            </div>
+                            <div class="examples" id="examples" data-design-id="examples"></div>
+                            <div class="syntax-guide" data-design-id="syntax-guide">
+                                <h3 data-design-id="syntax-guide-title">When 语法速查</h3>
+                                <p data-design-id="syntax-guide-description">以下为本实验室支持的语法子集，并非完整的 VS Code when 语法。变量从运行上下文取值，最终结果转换为布尔值。</p>
+                                <div class="syntax-grid" data-design-id="syntax-grid">
+                                    <div class="syntax-row" data-design-id="syntax-not"><span class="syntax-operator">!</span><span class="syntax-example">逻辑非：!isMac</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-logic"><span class="syntax-operator">&amp;&amp;</span><span class="syntax-example">逻辑与：isMac &amp;&amp; !isWin</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-or"><span class="syntax-operator">||</span><span class="syntax-example">逻辑或：isMac || isWin</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-equality"><span class="syntax-operator">==</span><span class="syntax-example">相等：editorLangId == 'typescript'</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-strict-equality"><span class="syntax-operator">===</span><span class="syntax-example">严格相等：editorLangId === 'typescript'</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-inequality"><span class="syntax-operator">!=</span><span class="syntax-example">不相等：editorLangId != 'javascript'</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-strict-inequality"><span class="syntax-operator">!==</span><span class="syntax-example">严格不相等：editorLangId !== 'javascript'</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-greater"><span class="syntax-operator">&gt;</span><span class="syntax-example">大于：workspaceFolderCount &gt; 0</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-greater-equal"><span class="syntax-operator">&gt;=</span><span class="syntax-example">大于等于：workspaceFolderCount &gt;= 1</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-less"><span class="syntax-operator">&lt;</span><span class="syntax-example">小于：workspaceFolderCount &lt; 2</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-less-equal"><span class="syntax-operator">&lt;=</span><span class="syntax-example">小于等于：workspaceFolderCount &lt;= 1</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-membership"><span class="syntax-operator">in</span><span class="syntax-example">数组包含：resourceFilename in supportedFolders</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-not-membership"><span class="syntax-operator">not in</span><span class="syntax-example">数组不包含：resourceFilename not in supportedFolders</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-match"><span class="syntax-operator">=~</span><span class="syntax-example">正则匹配：resourceScheme =~ /file/</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-grouping"><span class="syntax-operator">( )</span><span class="syntax-example">分组：isMac &amp;&amp; (workspaceFolderCount &gt; 0)</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-identifier"><span class="syntax-operator">变量</span><span class="syntax-example">isMac；名称以字母或下划线开头，后接字母、数字或下划线</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-number"><span class="syntax-operator">数字</span><span class="syntax-example">0、1、1.5；支持非负整数和小数</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-string"><span class="syntax-operator">字符串</span><span class="syntax-example">'typescript'、'hello world'；使用单引号</span></div>
+                                    <div class="syntax-row" data-design-id="syntax-regex"><span class="syntax-operator">正则</span><span class="syntax-example">/file/、/^readme/；用斜杠包围，不支持 flags</span></div>
+                                </div>
+                                <p data-design-id="syntax-precedence">优先级从高到低：!、比较 / in / not in / =~、&amp;&amp;、||。括号优先；连续 ! 从右向左结合。</p>
+                                <p data-design-id="syntax-limits">此实现中 == 与 === 均为严格相等，!= 与 !== 均为严格不相等；in 和 not in 的右侧必须为数组，否则返回 false。数组由上下文提供，表达式内不支持数组字面量。true / false 按变量名解析，布尔值应在上下文中设置。字符串和正则定界符不支持转义。</p>
+                            </div>
+                        </div>
+                        <div>
+                            <label>运行上下文</label>
+                            <div class="context-list" id="context-list" data-design-id="context-list"></div>
+                            <p class="context-note" data-design-id="context-note">表达式引用的变量必须存在于当前上下文。</p>
+                            <button class="context-add" id="add-context-button" type="button" data-design-id="add-context-button">+ 添加变量</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel flow-panel" data-design-id="flow-navigation">
+                    <div class="panel-heading"><div><div class="eyebrow">Pipeline</div><h2 data-design-id="flow-heading">解释器流程</h2></div><span class="eyebrow">可逐步观察</span></div>
+                    <div class="flow" id="flow-steps" data-design-id="flow-steps"></div>
+                </div>
+
+                <div class="results">
+                    <div class="panel trace-panel" data-design-id="trace-panel">
+                        <div class="tabs" role="tablist" data-design-id="trace-tabs">
+                            <button class="tab active" type="button" role="tab" aria-selected="true" data-tab="tokens" data-design-id="tokens-tab">Tokens</button>
+                            <button class="tab" type="button" role="tab" aria-selected="false" data-tab="rpn" data-design-id="rpn-tab">RPN 转换</button>
+                            <button class="tab" type="button" role="tab" aria-selected="false" data-tab="stack" data-design-id="stack-tab">求值栈</button>
+                        </div>
+                        <div class="trace-content" id="trace-content" data-design-id="trace-content"></div>
+                    </div>
+                    <aside class="panel insight" data-design-id="insight-panel">
+                        <div class="eyebrow">Explanation</div>
+                        <h2 data-design-id="insight-heading">为什么是这个结果？</h2>
+                        <p class="insight-lead" id="insight-lead" data-design-id="insight-lead">表达式先被拆成可以理解的最小单元，再按照运算符优先级决定执行顺序。</p>
+                        <div class="result-box" id="result-box" data-design-id="result-box"><div class="result-label">最终结果</div><div class="result-value" id="result-value" data-design-id="result-value">true</div></div>
+                        <ol class="insight-list" id="insight-list" data-design-id="insight-list"></ol>
+                        <div class="step-controls" data-design-id="step-controls"><button class="btn" id="prev-button" type="button" data-design-id="prev-button">上一步</button><span class="step-progress" id="step-progress" data-design-id="step-progress">1 / 4</span><button class="btn btn-primary" id="next-button" type="button" data-design-id="next-button">下一步</button></div>
+                    </aside>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script>
+        const defaults = {
+            expression: "editorLangId == 'typescript' && isMac",
+            context: { editorLangId: 'typescript', isMac: true, isWin: false, workspaceFolderCount: 1, supportedFolders: ['readme.md', 'main.ts'], resourceFilename: 'readme1.md', resourceScheme: 'untitle' }
+        };
+        const examples = [
+            { label: '比较 + 逻辑', expression: "editorLangId == 'typescript' && isMac" },
+            { label: '括号优先级', expression: 'workspaceFolderCount > 0 && (isWin || isMac)' },
+            { label: '集合判断', expression: "resourceFilename not in supportedFolders" },
+            { label: '正则匹配', expression: "resourceScheme =~ /file/" },
+            { label: '错误：引号未闭合', expression: "editorLangId == 'typescript && isMac" },
+            { label: '错误：非法字符', expression: 'isMac @ isWin' },
+            { label: '错误：缺少运算符', expression: "editorLangId == 'typescript && ' isMac" },
+            { label: '错误：缺少操作数', expression: 'isMac &&' },
+            { label: '错误：括号不匹配', expression: 'workspaceFolderCount > 0 && (isWin || isMac' },
+            { label: '错误：正则执行失败', expression: 'resourceScheme =~ /[/' }
+        ];
+        const state = { expression: defaults.expression, context: { ...defaults.context }, tokens: [], rpn: [], trace: [], error: '', tab: 'tokens', stage: 0 };
+        const input = document.querySelector('#expression-input');
+        const errorBox = document.querySelector('#expression-error');
+        const tokenCount = document.querySelector('#token-count');
+        const traceContent = document.querySelector('#trace-content');
+        const steps = [
+            { title: '输入表达式', short: 'Input' },
+            { title: '词法分析', short: 'Tokens' },
+            { title: '转换为 RPN', short: 'RPN' },
+            { title: '执行求值', short: 'Evaluate' }
+        ];
+        const stageTabs = ['tokens', 'tokens', 'rpn', 'stack'];
+        const stageDescriptions = [
+            '先输入一条表达式，解释器会从左到右读取它。',
+            'Tokenizer 把字符分成标识符、字面量、括号和运算符。',
+            'RPN 把运算符优先级转换成线性的执行顺序。',
+            '求值器从栈顶取值，执行运算，再把结果压回栈。'
+        ];
+        const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+        function tokenize(source, trace = null) {
+            const result = [], operators = ['===', '!==', '==', '!=', '>=', '<=', '&&', '||', '=~', '<', '>', '!'];
+            let index = 0, buffer = '', mode = '等待字符';
+            const snapshot = (action, reason, position = index, consume = false) => {
+                if (trace) trace.push({ action, reason, start: position, end: Math.min(position + 1, source.length), buffer, mode, consume, tokens: [...result] });
+            };
+            const take = reason => {
+                buffer += source[index];
+                snapshot('读取字符', reason, index, true);
+                index++;
+            };
+            const fail = (message, reason) => {
+                snapshot('扫描失败', reason);
+                if (trace) trace[trace.length - 1].error = true;
+                throw new Error(message);
+            };
+            snapshot('准备扫描', '每次读取一个字符，暂存在缓冲区中。确认边界后才生成 Token。');
+            while (index < source.length) {
+                buffer = ''; mode = '等待字符';
+                const start = index, char = source[index];
+                if (/\s/.test(char)) {
+                    snapshot('跳过空白', '这个空白字符不属于任何 Token，扫描指针前进一步。', index, true);
+                    index++; continue;
+                }
+                let kind, text;
+                if (char === "'" || char === '/') {
+                    const delimiter = char;
+                    kind = char === "'" ? 'STRING' : 'REGEX'; mode = kind === 'STRING' ? '读取字符串' : '读取正则';
+                    take('遇到起始定界符，进入内部文本读取状态；此时还不能生成 Token。');
+                    while (index < source.length && source[index] !== delimiter) take('还没有遇到结束定界符，把当前字符追加到缓冲区；内部空格也属于内容。');
+                    if (index === source.length) fail(kind === 'STRING' ? '字符串缺少结束引号' : '正则表达式缺少结束斜杠', `已经到达输入末尾（EOF），但从第 ${start + 1} 个字符开始仍未找到结束${kind === 'STRING' ? '引号' : '斜杠'}。缓冲区中的全部内容仍属于未闭合的${kind === 'STRING' ? '字符串' : '正则'}，不能生成 Token，停止扫描。`);
+                    take('读到配对的结束定界符，文本范围已经完整。');
+                    text = buffer.slice(1, -1);
+                } else if (/[a-zA-Z_]/.test(char)) {
+                    mode = '读取标识符'; kind = 'IDENTIFIER';
+                    take('字母或下划线可以作为标识符开头，开始积累名称。');
+                    while (index < source.length && /[a-zA-Z\d_]/.test(source[index])) take('字母、数字或下划线可以继续组成同一个名称，暂不生成 Token。');
+                    snapshot('确认名称边界', index === source.length ? '已到输入末尾，名称完整。' : '向前查看：当前字符不能继续组成名称，不消耗它，先结束当前名称。');
+                    text = buffer;
+                    if (text === 'in') kind = 'OPERATOR';
+                } else if (/\d/.test(char)) {
+                    mode = '读取数字'; kind = 'NUMBER';
+                    take('数字开头，开始积累数值文本。');
+                    while (index < source.length && /\d/.test(source[index])) take('当前字符仍是数字，追加到数值文本。');
+                    if (source[index] === '.' && /\d/.test(source[index + 1] || '')) {
+                        take('小数点后面有数字，把小数点纳入当前数值。');
+                        while (index < source.length && /\d/.test(source[index])) take('继续读取小数部分。');
+                    }
+                    snapshot('确认数字边界', '后面不能继续组成当前数字，或已经到达输入末尾。');
+                    text = buffer;
+                } else if ('()'.includes(char)) {
+                    mode = '读取括号'; kind = char === '(' ? 'BRACKET_LEFT' : 'BRACKET_RIGHT';
+                    take('括号自身就是一个完整的单字符 Token。'); text = buffer;
+                } else {
+                    mode = '读取运算符'; kind = 'OPERATOR';
+                    if (!operators.some(operator => operator.startsWith(char))) fail('无法识别字符 “' + char + '”', `当前位置的 ${JSON.stringify(char)} 不符合任何词法规则，不能生成 Token，停止扫描。`);
+                    take('开始匹配运算符，继续检查后面的字符是否能组成更长的运算符。');
+                    while (index < source.length && operators.some(operator => operator.startsWith(buffer + source[index]))) take('加入这个字符仍可匹配运算符，优先读取更长的组合。');
+                    if (!operators.includes(buffer)) fail('不完整的运算符：' + buffer, `缓冲区 ${JSON.stringify(buffer)} 只是运算符前缀，后续字符或 EOF 无法补全它，不能生成 Token。`);
+                    snapshot('确认运算符边界', '无法继续组成更长的运算符，保留当前匹配；向前查看的字符没有被消耗。');
+                    text = buffer;
+                }
+                result.push({ kind, text, start, end: index });
+                snapshot('生成 Token', `确认类型 ${kind}，保存文本 ${JSON.stringify(text)}。${kind === 'STRING' || kind === 'REGEX' ? '两端定界符不存入 Token 文本。' : ''}`, index - 1);
+                if (text === 'in' && result.length > 1 && result[result.length - 2].kind === 'IDENTIFIER' && result[result.length - 2].text === 'not') {
+                    const previous = result[result.length - 2];
+                    result.splice(-2, 2, { kind: 'OPERATOR', text: 'not in', start: previous.start, end: index });
+                    snapshot('合并 not in', '前一个 Token 是 not，当前是 in，将两个 Token 合并为一个集合判断运算符。', index - 1);
+                }
+                buffer = ''; mode = '等待字符';
+                snapshot('清空缓冲区', '当前 Token 已保存，清空临时文本，准备从下一个未消耗的字符继续。');
+            }
+            snapshot('扫描完成', `共生成 ${result.length} 个 Token，接下来处理运算符优先级。`);
+            return result;
+        }
+        const precedence = { '||': 1, '&&': 2, '==': 3, '===': 3, '!=': 3, '!==': 3, '>': 3, '>=': 3, '<': 3, '<=': 3, '=~': 3, 'in': 3, 'not in': 3, '!': 4 };
+        const tokenText = token => token.kind === 'STRING' ? `'${token.text}'` : token.kind === 'REGEX' ? `/${token.text}/` : token.text;
+        let rpnStep = 0;
+        let tokenStep = 0, stackStep = 0;
+        const displayValue = value => value === undefined ? 'undefined' : JSON.stringify(value);
+        function toRpn(tokens, trace = []) {
+            const output = [], operators = [];
+            let expectsOperand = true, depth = 0;
+            const syntaxError = (index, message) => {
+                const token = tokens[index];
+                const reason = `${message}（${token ? `第 ${token.start + 1} 个字符：${tokenText(token)}` : '输入末尾 EOF'}）。${expectsOperand ? '当前位置需要一个值或子表达式。' : '前一个值或子表达式已结束，此处需要运算符或右括号。'}`;
+                snapshot('RPN 转换失败', index, reason);
+                trace[trace.length - 1].error = true;
+                throw new SyntaxError(reason);
+            };
+            const snapshot = (action, index, reason) => trace.push({ action, index, reason, stack: operators.map(tokenText), output: output.map(tokenText) });
+            snapshot('准备转换', -1, '后缀表达式把运算符放在两个操作数后面：a == b 变成 a b ==。这里只调整顺序，还不计算变量值。');
+            tokens.forEach((token, index) => {
+                const operand = ['IDENTIFIER', 'STRING', 'NUMBER', 'REGEX'].includes(token.kind);
+                if (operand || token.kind === 'BRACKET_LEFT' || token.text === '!') {
+                    if (!expectsOperand) syntaxError(index, '缺少运算符：两个操作数之间不能直接相邻');
+                    if (token.kind === 'BRACKET_LEFT') depth++;
+                    expectsOperand = !operand;
+                } else if (token.kind === 'BRACKET_RIGHT') {
+                    if (depth === 0) syntaxError(index, '右括号没有匹配的左括号');
+                    if (expectsOperand) syntaxError(index, '缺少操作数：括号不能为空或以运算符结尾');
+                    depth--;
+                } else {
+                    if (!Object.prototype.hasOwnProperty.call(precedence, token.text)) syntaxError(index, '未知运算符');
+                    if (expectsOperand) syntaxError(index, '运算符前缺少操作数');
+                    expectsOperand = true;
+                }
+                if (['IDENTIFIER', 'STRING', 'NUMBER', 'REGEX'].includes(token.kind)) { output.push(token); snapshot('把值送到输出末尾', index, `${tokenText(token)} 是操作数，不需要比较优先级，直接排进输出。变量在求值阶段才会替换成实际值。`); return; }
+                if (token.kind === 'BRACKET_LEFT') { operators.push(token); snapshot('放入括号边界', index, '左括号留在栈里作为边界，括号内的运算符不能越过它。括号本身不进入输出。'); return; }
+                if (token.kind === 'BRACKET_RIGHT') {
+                    while (operators.length && operators.at(-1).text !== '(') { const moved = operators.pop(); output.push(moved); snapshot('把括号内的运算符送到输出', index, `遇到右括号，先把栈顶 ${moved.text} 送到输出末尾，保证括号内的运算优先完成。`); }
+                    operators.pop(); snapshot('移除配对括号', index, '括号内的顺序已经确定，移除左括号，右括号也不进入输出。'); return;
+                }
+                while (token.text !== '!' && operators.length && operators.at(-1).text !== '(' && precedence[operators.at(-1).text] >= precedence[token.text]) {
+                    const moved = operators.pop(); output.push(moved);
+                    snapshot('先输出栈顶运算符', index, `${moved.text} 的优先级（${precedence[moved.text]}）不低于当前 ${token.text}（${precedence[token.text]}），所以先把 ${moved.text} 放入输出。当前 Token 还没有入栈。`);
+                }
+                const top = operators.at(-1);
+                operators.push(token); snapshot('让当前运算符暂时等待', index, top && top.text !== '(' ? `${token.text} 的优先级高于栈顶 ${top.text}，先放在栈顶等待后面的操作数。` : `${token.text} 前面没有需要先输出的运算符，放入栈中等待后面的操作数。`);
+            });
+            if (tokens.length && expectsOperand) syntaxError(tokens.length, '表达式末尾缺少操作数');
+            if (depth) syntaxError(tokens.length, '缺少右括号');
+            while (operators.length) { const moved = operators.pop(); output.push(moved); snapshot('输入结束，输出剩余运算符', tokens.length, `没有新的 Token 了，将栈顶 ${moved.text} 放到输出末尾。`); }
+            snapshot('转换完成', tokens.length, '运算符栈已清空。输出就是 RPN：从左到右读取值，遇到运算符时取出所需的操作数。下一阶段才真正执行运算。');
+            return { output, trace };
+        }
+        function readValue(token) {
+            if (token.kind === 'NUMBER') return Number(token.text);
+            if (token.kind === 'STRING' || token.kind === 'REGEX') return token.text;
+            if (!Object.prototype.hasOwnProperty.call(state.context, token.text)) {
+                throw new ReferenceError(`变量未定义：${token.text}，当前运行上下文中不存在该名称`);
+            }
+            return state.context[token.text];
+        }
+        function applyOperator(operator, left, right) { if (operator === '==') return left === right; if (operator === '===') return left === right; if (operator === '!=') return left !== right; if (operator === '!==') return left !== right; if (operator === '>') return left > right; if (operator === '>=') return left >= right; if (operator === '<') return left < right; if (operator === '<=') return left <= right; if (operator === '&&') return left && right; if (operator === '||') return left || right; if (operator === 'in') return Array.isArray(right) && right.includes(left); if (operator === 'not in') return Array.isArray(right) && !right.includes(left); if (operator === '=~') return new RegExp(right).test(left); throw new Error('未知运算符 ' + operator); }
+        function evaluate(rpn, trace = []) {
+            const stack = [];
+            const snapshot = (action, index, reason) => trace.push({ action, index, reason, stack: [...stack] });
+            snapshot('准备求值', -1, '按 RPN 顺序从左到右读取。遇到值就压栈，遇到运算符就从栈顶取值。最右边是栈顶。');
+            rpn.forEach((token, index) => {
+                try {
+                if (token.kind !== 'OPERATOR') {
+                    const value = readValue(token);
+                    stack.push(value);
+                    snapshot('读取值并压栈', index, token.kind === 'IDENTIFIER' ? `从运行上下文读取 ${token.text}，得到 ${displayValue(value)}，放到栈顶。` : `${tokenText(token)} 是字面量，直接将 ${displayValue(value)} 放到栈顶。`);
+                    return;
+                }
+                if (stack.length < (token.text === '!' ? 1 : 2)) throw new SyntaxError(`运算符 ${token.text} 缺少操作数`);
+                const right = stack.pop();
+                snapshot(token.text === '!' ? '取出操作数' : '先取右操作数', index, `取出栈顶 ${displayValue(right)}${token.text === '!' ? '，用于逻辑取反。' : '，它是右操作数；左右顺序不能交换。'}`);
+                let left;
+                if (token.text !== '!') {
+                    left = stack.pop();
+                    snapshot('再取左操作数', index, `再取出 ${displayValue(left)}，作为左操作数。即将计算：${displayValue(left)} ${token.text} ${displayValue(right)}。`);
+                }
+                const result = token.text === '!' ? !right : applyOperator(token.text, left, right);
+                snapshot('执行运算', index, `${token.text === '!' ? '!' : displayValue(left) + ' ' + token.text + ' '}${displayValue(right)} 得到 ${displayValue(result)}，结果还没有压回栈。`);
+                stack.push(result);
+                snapshot('把结果压回栈顶', index, `将 ${displayValue(result)} 放回栈，供后面的运算符使用。`);
+                } catch (error) {
+                    snapshot('求值失败', index, `${token.text === '=~' ? '执行 =~ 时需要构造正则表达式，但模式无效。' : `处理 ${tokenText(token)} 时发生错误。`} ${error.message} 本步没有产生结果，不再继续求值。`);
+                    trace[trace.length - 1].error = true;
+                    throw error;
+                }
+            });
+            if (rpn.length && stack.length !== 1) {
+                snapshot('求值失败', rpn.length, '求值栈必须恰好剩下一个结果');
+                trace[trace.length - 1].error = true;
+                throw new SyntaxError('求值栈必须恰好剩下一个结果');
+            }
+            snapshot('求值完成', rpn.length, `将栈中结果 ${displayValue(stack[0])} 转换为布尔值，最终得到 ${Boolean(stack[0])}。`);
+            return { value: Boolean(stack[0]), trace };
+        }
+        function process() {
+            tokenStep = rpnStep = stackStep = 0;
+            state.tab = 'tokens'; state.stage = 1; state.error = ''; state.errorStage = null;
+            state.expression = input.value;
+            state.scanTrace = []; state.rpnTrace = []; state.tokens = []; state.rpn = []; state.trace = [];
+            let executingStage = 1;
+            try {
+                state.tokens = tokenize(state.expression, state.scanTrace);
+                executingStage = 2;
+                state.rpn = toRpn(state.tokens, state.rpnTrace).output;
+                executingStage = 3;
+                state.result = evaluate(state.rpn, state.trace).value;
+            } catch (error) {
+                if (executingStage === 1) state.tokens = state.scanTrace.at(-1)?.tokens || [];
+                state.error = error.message; state.errorStage = executingStage;
+                state.stage = executingStage; state.tab = stageTabs[executingStage];
+                state.result = undefined;
+            }
+            render();
+        }
+        function renderFlow() { document.querySelector('#flow-steps').innerHTML = steps.map((step, index) => `<div class="flow-step ${state.stage === index ? 'active' : ''} ${state.errorStage === index ? 'failed' : state.stage > index ? 'done' : ''}"><span class="flow-index">${index + 1}</span><span>${step.title}${state.errorStage === index ? ' · 失败' : ''}</span></div>`).join(''); document.querySelector('#summary-step').textContent = `步骤 ${String(state.stage + 1).padStart(2, '0')} / 04`; document.querySelector('#summary-label').textContent = steps[state.stage].title; }
+        function tokenMarkup(token) { const group = token.kind === 'IDENTIFIER' ? 'identifier' : token.kind === 'OPERATOR' ? 'operator' : token.kind === 'BRACKET_LEFT' || token.kind === 'BRACKET_RIGHT' ? 'bracket' : 'literal'; return `<span class="token ${group}"><span>${escapeHtml(token.text)}</span><span class="token-kind">${token.kind}</span></span>`; }
+        function actionControls(kind, step, total) {
+            return `<div class="rpn-controls"><button type="button" class="btn" data-demo="${kind}" data-step="0" data-design-id="${kind}-restart">从头看</button><button type="button" class="btn" data-demo="${kind}" data-step="${step - 1}" ${step === 0 ? 'disabled' : ''} data-design-id="${kind}-back">上个动作</button><button type="button" class="btn btn-primary" data-demo="${kind}" data-step="${step + 1}" ${step === total - 1 ? 'disabled' : ''} data-design-id="${kind}-forward">下个动作</button></div>`;
+        }
+        function renderTokens() {
+            const trace = state.scanTrace;
+            tokenStep = Math.min(tokenStep, trace.length - 1);
+            const current = trace[tokenStep], before = trace[Math.max(0, tokenStep - 1)];
+            const tokens = items => items.map(tokenMarkup).join('') || '<span class="trace-meta">空</span>';
+            return `<section class="rpn-demo" data-design-id="tokens-demo"><div class="trace-topline"><strong>从字符到词法单元</strong><span class="trace-meta">扫描 ${tokenStep + 1} / ${trace.length}</span></div>
+                <pre class="scan-source" data-design-id="scan-source">${escapeHtml(state.expression.slice(0, current.start))}<mark>${escapeHtml(state.expression.slice(current.start, current.end))}</mark>${escapeHtml(state.expression.slice(current.end))}</pre>
+                <p data-design-id="scan-position">${current.start === state.expression.length ? '输入末尾 · EOF' : `字符位置 ${current.start + 1} / ${state.expression.length} · ${escapeHtml(JSON.stringify(state.expression[current.start]))}`} · ${escapeHtml(current.mode)}</p>
+                <div class="rpn-reason ${current.error ? 'scan-failure' : ''}" aria-live="polite"><h3 data-design-id="scan-action">${escapeHtml(current.action)}</h3><p data-design-id="scan-reason">${escapeHtml(current.reason)}</p></div>
+                <section class="demo-state"><h3 data-design-id="scan-buffer-title">字符缓冲区 · 尚未提交的文本</h3><div class="rpn-state"><span>之前</span><div><code class="stack-item">${escapeHtml(JSON.stringify(before.buffer))}</code></div><span>现在</span><div><code class="stack-item">${escapeHtml(JSON.stringify(current.buffer))}</code></div></div></section>
+                <section class="demo-state"><h3 data-design-id="scan-tokens-title">已生成的 Token</h3><div class="rpn-state"><span>之前</span><div>${tokens(before.tokens)}</div><span>现在</span><div>${tokens(current.tokens)}</div></div></section>${actionControls('tokens', tokenStep, trace.length)}</section>`;
+        }
+        function renderRpn() {
+            const trace = state.rpnTrace;
+            rpnStep = Math.min(rpnStep, trace.length - 1);
+            const current = trace[rpnStep], before = trace[Math.max(0, rpnStep - 1)];
+            const values = items => items.map(item => `<code class="stack-item">${escapeHtml(item)}</code>`).join(' ') || '<span class="trace-meta">空</span>';
+            return `<section class="rpn-demo" data-design-id="rpn-demo">
+                <div class="trace-topline"><strong>把运算符移到操作数后面</strong><span class="trace-meta">转换 ${rpnStep + 1} / ${trace.length}</span></div>
+                <div class="rpn-input" data-design-id="rpn-input">${state.tokens.map((token, index) => `<code class="stack-item ${index === current.index ? 'rpn-current' : ''}">${escapeHtml(tokenText(token))}${index === current.index ? ' · 当前' : ''}</code>`).join(' ')}</div>
+                <div class="rpn-reason ${current.error ? 'scan-failure' : ''}" aria-live="polite"><h3 data-design-id="rpn-action">${escapeHtml(current.action)}</h3><p data-design-id="rpn-reason">${escapeHtml(current.reason)}</p></div>
+                <div class="rpn-lanes">
+                    <section><h3 data-design-id="rpn-waiting-title">运算符等待区 · 栈</h3><p data-design-id="rpn-stack-order">最右边是栈顶，最后放入的先取出。</p><div class="rpn-state"><span>之前</span><div>${values(before.stack)}</div><span>现在</span><div>${values(current.stack)}</div></div></section>
+                    <section><h3 data-design-id="rpn-output-title">已排好的输出 · RPN</h3><p data-design-id="rpn-output-order">从左到右，新的内容加在末尾。</p><div class="rpn-state"><span>之前</span><div>${values(before.output)}</div><span>现在</span><div>${values(current.output)}</div></div></section>
+                </div>
+                <div class="rpn-controls"><button type="button" class="btn" data-rpn-step="0" data-design-id="rpn-restart">从头看</button><button type="button" class="btn" data-rpn-step="${rpnStep - 1}" ${rpnStep === 0 ? 'disabled' : ''} data-design-id="rpn-back">上个动作</button><button type="button" class="btn btn-primary" data-rpn-step="${rpnStep + 1}" ${rpnStep === trace.length - 1 ? 'disabled' : ''} data-design-id="rpn-forward">下个动作</button></div>
+            </section>`;
+        }
+        traceContent.addEventListener('click', event => {
+            const button = event.target.closest('[data-rpn-step]');
+            if (!button || button.disabled) return;
+            const focusedId = button.dataset.designId;
+            rpnStep = Number(button.dataset.rpnStep);
+            traceContent.innerHTML = renderRpn();
+            const target = traceContent.querySelector(`[data-design-id="${focusedId}"]`);
+            (target.disabled ? traceContent.querySelector('[data-design-id="rpn-restart"]') : target).focus();
+        });
+        traceContent.addEventListener('click', event => {
+            const button = event.target.closest('[data-demo]');
+            if (!button || button.disabled) return;
+            const kind = button.dataset.demo, id = button.dataset.designId;
+            if (kind === 'tokens') tokenStep = Number(button.dataset.step);
+            else stackStep = Number(button.dataset.step);
+            traceContent.innerHTML = kind === 'tokens' ? renderTokens() : renderStack();
+            const target = traceContent.querySelector(`[data-design-id="${id}"]`);
+            (target.disabled ? traceContent.querySelector(`[data-design-id="${kind}-restart"]`) : target).focus();
+        });
+        function renderStack() {
+            stackStep = Math.min(stackStep, state.trace.length - 1);
+            const current = state.trace[stackStep], before = state.trace[Math.max(0, stackStep - 1)];
+            const values = items => items.map(value => `<code class="stack-item">${escapeHtml(displayValue(value))}</code>`).join('') || '<span class="trace-meta">空</span>';
+            return `<section class="rpn-demo" data-design-id="stack-demo"><div class="trace-topline"><strong>按 RPN 顺序执行运算</strong><span class="trace-meta">求值 ${stackStep + 1} / ${state.trace.length}</span></div>
+                <div class="rpn-input" data-design-id="stack-input">${state.rpn.map((token, index) => `<code class="stack-item ${index === current.index ? 'rpn-current' : ''}">${escapeHtml(tokenText(token))}${index === current.index ? ' · 当前' : ''}</code>`).join('')}</div>
+                <div class="rpn-reason ${current.error ? 'scan-failure' : ''}" aria-live="polite"><h3 data-design-id="stack-action">${escapeHtml(current.action)}</h3><p data-design-id="stack-reason">${escapeHtml(current.reason)}</p></div>
+                <section class="demo-state"><h3 data-design-id="stack-values-title">求值栈 · 最右边是栈顶</h3><div class="rpn-state"><span>之前</span><div>${values(before.stack)}</div><span>现在</span><div>${values(current.stack)}</div></div></section>${actionControls('stack', stackStep, state.trace.length)}</section>`;
+        }
+        function parseContextValue(raw) { return raw === 'true' ? true : raw === 'false' ? false : /^\d+(?:\.\d+)?$/.test(raw) ? Number(raw) : raw.includes(',') ? raw.split(',').map(item => item.trim()).filter(Boolean) : raw; }
+        function renderContext() {
+            const list = document.querySelector('#context-list');
+            list.innerHTML = Object.entries(state.context).map(([key, value], index) => `<div class="context-row"><input class="context-key" data-old-key="${escapeHtml(key)}" value="${escapeHtml(key)}" aria-label="变量名称" data-design-id="context-key-${index}"><input class="context-value" data-key="${escapeHtml(key)}" value="${escapeHtml(Array.isArray(value) ? value.join(', ') : value)}" aria-label="变量值" data-design-id="context-value-${index}"><button class="context-remove" type="button" data-key="${escapeHtml(key)}" aria-label="删除变量" data-design-id="remove-context-${index}">×</button></div>`).join('');
+            list.querySelectorAll('.context-value').forEach(field => field.addEventListener('change', event => {
+                state.context[event.target.dataset.key] = parseContextValue(event.target.value);
+                process();
+            }));
+            list.querySelectorAll('.context-key').forEach(field => field.addEventListener('change', event => {
+                const oldKey = event.target.dataset.oldKey, newKey = event.target.value.trim();
+                if (!newKey || (newKey !== oldKey && Object.prototype.hasOwnProperty.call(state.context, newKey))) { renderContext(); return; }
+                const value = state.context[oldKey];
+                delete state.context[oldKey];
+                Object.defineProperty(state.context, newKey, { value, writable: true, enumerable: true, configurable: true });
+                process();
+            }));
+            list.querySelectorAll('.context-remove').forEach(button => button.addEventListener('click', event => {
+                delete state.context[event.currentTarget.dataset.key];
+                process();
+            }));
+        }
+        function render() {
+            errorBox.textContent = state.error;
+            tokenCount.textContent = `${state.tokens.length} tokens${state.error ? ' · 解析中断' : ''}`;
+            renderFlow(); renderContext();
+            document.querySelectorAll('.tab').forEach(tab => {
+                const active = tab.dataset.tab === state.tab;
+                tab.classList.toggle('active', active);
+                tab.setAttribute('aria-selected', active);
+                tab.disabled = stageTabs.indexOf(tab.dataset.tab, 1) > (state.errorStage ?? 3);
+            });
+            if (state.stage === 0) traceContent.innerHTML = '<div class="empty-state">表达式已准备好<br><strong>点击“下一步”开始词法分析</strong></div>';
+            else if (state.tab === 'tokens') traceContent.innerHTML = renderTokens();
+            else traceContent.innerHTML = state.tab === 'rpn' ? renderRpn() : renderStack();
+            const result = state.error ? state.error : state.result;
+            document.querySelector('#result-box').classList.toggle('error', Boolean(state.error));
+            document.querySelector('#result-value').textContent = String(result);
+            document.querySelector('#insight-lead').textContent = state.error ? `失败阶段：${steps[state.errorStage].title}。${state.stage < state.errorStage ? '当前阶段可以正常完成，错误在后续阶段发现。' : '已保留本阶段出错前的动作和失败原因。'}` : `${stageDescriptions[state.stage]} 当前结果为 ${result}。`;
+            document.querySelector('#insight-list').innerHTML = (state.error ? [state.errorStage === 1 ? '扫描遇到非法或未闭合的字符内容，不能完成 Token 列表。' : state.errorStage === 2 ? 'Token 本身合法，但排列不符合语法；尚未执行运算。' : 'Token 和语法均合法，错误发生在实际运算过程中。', '失败前的阶段和失败阶段均可回放，后续阶段未执行。', '修复输入后重新解析，演示从头开始。'] : [stageDescriptions[state.stage], `当前已生成 ${state.tokens.length} 个 Token 和 ${state.rpn.filter(token => token.kind === 'OPERATOR').length} 个运算符。`, '继续点击下一步，观察数据如何从一个阶段流向下一个阶段。']).map((text, index) => `<li><span class="insight-num">${index + 1}</span><span>${text}</span></li>`).join('');
+            document.querySelector('#step-progress').textContent = `${state.stage + 1} / 4`;
+            document.querySelector('#prev-button').disabled = state.stage === 0;
+            document.querySelector('#next-button').disabled = state.stage >= (state.errorStage ?? 3);
+        }
+        function setup() {
+            document.querySelector('#examples').innerHTML = examples.map((item, index) => `<button class="example-chip" type="button" data-example="${index}" data-design-id="example-${index}">${item.label}</button>`).join('');
+            document.querySelectorAll('.example-chip').forEach(button => button.addEventListener('click', () => { input.value = examples[button.dataset.example].expression; process(); }));
+            document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+                if (tab.disabled) return;
+                state.tab = tab.dataset.tab;
+                state.stage = stageTabs.indexOf(state.tab, 1);
+                render();
+            }));
+            document.querySelector('#run-button').addEventListener('click', process);
+            document.querySelector('#add-context-button').addEventListener('click', () => { let index = 1; while (Object.prototype.hasOwnProperty.call(state.context, `customVar${index}`)) index++; state.context[`customVar${index}`] = true; process(); });
+            document.querySelector('#reset-button').addEventListener('click', () => { input.value = defaults.expression; state.context = { ...defaults.context }; process(); });
+            document.querySelector('#random-button').addEventListener('click', () => { const next = examples[Math.floor(Math.random() * examples.length)]; input.value = next.expression; process(); });
+            document.querySelector('#prev-button').addEventListener('click', () => { state.stage = Math.max(0, state.stage - 1); state.tab = stageTabs[state.stage]; render(); });
+            document.querySelector('#next-button').addEventListener('click', () => { state.stage = Math.min(state.errorStage ?? 3, state.stage + 1); state.tab = stageTabs[state.stage]; render(); });
+            process();
+        }
+        setup();
+    </script>
+</body>
+</html>

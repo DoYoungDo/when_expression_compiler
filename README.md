@@ -2,7 +2,7 @@
 
 # When Expression Compiler
 
-这是一个不到500行（含测试代码）的简单的 When 表达式解释器项目，用于解释执行 vscode `when` 表达式。
+这是一个用于学习简单解释器实现的 TypeScript 项目，用于解释执行 VS Code `when` 表达式。
 
 > [vscode when 表达式规范](https://code.visualstudio.com/api/references/when-clause-contexts)
 
@@ -28,6 +28,14 @@
    ```bash
    npm run test
    ```
+
+## 语法校验
+
+词法扫描识别 Token，RPN 转换检查操作数、运算符和括号的排列。
+例如 `editorLangId == 'typescript && ' isMac` 的引号配对正确，但字符串与 `isMac` 之间缺少运算符，因此抛出 `SyntaxError`，不会读取上下文或开始求值。
+相邻操作数、缺失操作数、空括号和不匹配的括号也会被拒绝；空表达式仍返回 `false`。
+`npm test` 使用断言验证结果和非法语法，失败时以非零退出码退出。
+HTML 教学原型维护独立的浏览器实现，修改解析规则时需同步检查，不能假设它直接调用 `src/index.ts`。
 
 ## 贡献
 
